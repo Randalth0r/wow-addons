@@ -1,21 +1,58 @@
 # IncBGS — Changelog
 
+## [v1.0.6](https://www.curseforge.com/wow/addons/incbgs) — June 11, 2026
+*By [Randalthor](https://www.curseforge.com/members/randalthor)*
+
+### Fix
+- Removed `RegisterStateDriver`, which was overriding manual show/hide.
+  Bar visibility on BG enter/leave now uses a recursive `C_Timer.After`
+  that polls `InCombatLockdown()` every second until it is safe to act.
+
+---
+
+## [v1.0.5](https://www.curseforge.com/wow/addons/incbgs) — June 11, 2026
+*By [Randalthor](https://www.curseforge.com/members/randalthor)*
+
+### Fix
+- Fixed `ADDON_ACTION_BLOCKED` on `Bar:Show()` triggered by the minimap icon
+  click and slash command during combat. All manual show/hide calls now go
+  through `SafeToggleBar()`, which checks `InCombatLockdown()` first and prints
+  a friendly message if the action cannot be performed during combat.
+
+---
+
+## [v1.0.4](https://www.curseforge.com/wow/addons/incbgs) — June 11, 2026
+*By [Randalthor](https://www.curseforge.com/members/randalthor)*
+
+### Fix
+- Replaced manual `Bar:Show()`/`Bar:Hide()` logic with `RegisterStateDriver`
+  — the Blizzard-native secure mechanism for frame visibility. The bar now
+  shows/hides based on instance type without any Lua-side visibility calls,
+  eliminating `ADDON_ACTION_BLOCKED` errors in combat.
+
+---
+
+## [v1.0.2](https://www.curseforge.com/wow/addons/incbgs) — June 11, 2026
+*By [Randalthor](https://www.curseforge.com/members/randalthor)*
+
+### Fix
+- Addressed `ADDON_ACTION_BLOCKED` on `IncBGSBar:Show()` more robustly: the
+  `C_Timer.After` workaround from v1.0.1 proved insufficient because WoW 12.x
+  taints any addon frame shown/hidden from Lua during combat events. Moved to
+  `RegisterStateDriver` for secure, taint-free visibility control.
+
+---
+
 ## [v1.0.1](https://www.curseforge.com/wow/addons/incbgs) — June 11, 2026
 *By [Randalthor](https://www.curseforge.com/members/randalthor)*
 
-### Bug Fixes
-- Fixed `ADDON_ACTION_BLOCKED` error on entering/leaving a battleground:
-  `Bar:Show()`/`Bar:Hide()` triggered by zone events ran in a protected
-  context in WoW 12.x. The call is now deferred one frame via
-  `C_Timer.After(0, ...)`, which resolves the taint.
-- Fixed two icon textures that failed to load due to an invalid path escape
-  (drag anchor icon and minimap data-broker icon)
-- Removed a duplicate `SetupMinimapButton` definition that could throw an
-  error if reached
-- Declared the drag-anchor button locally instead of leaking it as a global
-- Implemented the `/incbgs minimap` command (previously documented but not wired up)
-- Corrected the in-game help text (`/incbgs` instead of the stale `/rpb`)
-  and added the missing minimap line
+### Fix
+- Fixed `ADDON_ACTION_BLOCKED` error on `IncBGSBar:Show()` triggered by
+  `PLAYER_ENTERING_WORLD` / `ZONE_CHANGED` events. Bar show/hide is now
+  deferred by one tick via `C_Timer.After(0, ...)` to exit the protected
+  execution context before calling frame visibility functions.
+
+---
 
 ## [v1.0.0](https://www.curseforge.com/wow/addons/incbgs) — June 11, 2026
 *By [Randalthor](https://www.curseforge.com/members/randalthor)*
