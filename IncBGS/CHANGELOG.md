@@ -1,5 +1,22 @@
 # IncBGS — Changelog
 
+## [v1.0.1](https://www.curseforge.com/wow/addons/incbgs) — June 11, 2026
+*By [Randalthor](https://www.curseforge.com/members/randalthor)*
+
+### Bug Fixes
+- Fixed `ADDON_ACTION_BLOCKED` error on entering/leaving a battleground:
+  `Bar:Show()`/`Bar:Hide()` triggered by zone events ran in a protected
+  context in WoW 12.x. The call is now deferred one frame via
+  `C_Timer.After(0, ...)`, which resolves the taint.
+- Fixed two icon textures that failed to load due to an invalid path escape
+  (drag anchor icon and minimap data-broker icon)
+- Removed a duplicate `SetupMinimapButton` definition that could throw an
+  error if reached
+- Declared the drag-anchor button locally instead of leaking it as a global
+- Implemented the `/incbgs minimap` command (previously documented but not wired up)
+- Corrected the in-game help text (`/incbgs` instead of the stale `/rpb`)
+  and added the missing minimap line
+
 ## [v1.0.0](https://www.curseforge.com/wow/addons/incbgs) — June 11, 2026
 *By [Randalthor](https://www.curseforge.com/members/randalthor)*
 

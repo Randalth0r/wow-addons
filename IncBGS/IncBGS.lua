@@ -1,4 +1,4 @@
--- IncBGS v1.0.0
+-- IncBGS v1.0.1
 -- Quick Incoming report bar for Battlegrounds.
 -- Original concept inspired by REPorter by AcidWeb.
 -- Written for WoW 12.x (12.0.5) by Randalthor.
@@ -6,7 +6,7 @@
 local ADDON_NAME, INC = ...
 _G.IncBGS = INC
 
-local VERSION = "1.0.0"
+local VERSION = "1.0.1"
 
 -- ── Upvalues ───────────────────────────────────────────────────────────────
 local pairs          = _G.pairs
@@ -15,6 +15,7 @@ local IsInInstance   = _G.IsInInstance
 local GetSubZoneText = _G.GetSubZoneText
 local CreateFrame    = _G.CreateFrame
 local UIParent       = _G.UIParent
+local C_Timer        = _G.C_Timer
 
 -- ── Forward declarations ───────────────────────────────────────────────────
 local Bar        = nil
@@ -440,12 +441,18 @@ eventFrame:SetScript("OnEvent", function(_, event, arg1)
         or event == "ZONE_CHANGED_NEW_AREA"
         or event == "ZONE_CHANGED" then
 
-        local _, instanceType = IsInInstance()
-        if instanceType == "pvp" then
-            Bar:Show()
-            RefreshMacros()
-        else
-            Bar:Hide()
-        end
+        -- Defer Show/Hide by one frame via C_Timer.After(0, ...).
+        -- Calling Bar:Show() directly inside these events runs in a
+        -- protected execution context in WoW 12.x, which triggers
+        -- ADDON_ACTION_BLOCKED. Deferring moves it out of that context.
+        C_Timer.After(0, function()
+            local _, instanceType = IsInInstance()
+            if instanceType == "pvp" then
+                Bar:Show()
+                RefreshMacros()
+            else
+                Bar:Hide()
+            end
+        end)
     end
 end)
