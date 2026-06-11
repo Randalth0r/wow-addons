@@ -1,0 +1,11 @@
+## Interface: 120005
+## Title: |cFF74D06CIncBGS|r
+## Notes: Quick Incoming report bar for Battlegrounds. Compatible with WoW 12.x
+## Version: 1.0.0
+## Author: Randalthor
+## SavedVariables: IncBGSSettings
+## IconTexture: Interface\Icons\ability_warrior_battleshout
+## X-Curse-Project-ID: TBD
+## X-Credits: Original concept inspired by REPorter by AcidWeb
+
+IncBGS.lua
