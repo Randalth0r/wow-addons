@@ -1,0 +1,12 @@
+## Interface: 120100, 120007
+## Title-Mainline: RosterMail
+## Title: RosterMail
+## Notes: Quick mail access to your realm alts.
+## Author: Randalthor
+## Version: 1.0.0
+## IconTexture: Interface\AddOns\RosterMail\Icon
+## SavedVariables: RosterMailDB
+
+core.lua
+db.lua
+ui.lua
