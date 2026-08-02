@@ -10,7 +10,7 @@ eventFrame:SetScript("OnEvent", function(self, event, name)
 			RosterMailDB = {}
 		end
 
-		print("RosterMail v1.0.0 loaded.")
+		print("RosterMail v1.0.1 loaded.")
 		self:UnregisterEvent("ADDON_LOADED")
 	end
 end)

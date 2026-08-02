@@ -4,7 +4,7 @@ A lightweight World of Warcraft addon that adds a mailbox side panel for quick a
 
 ## Version
 
-`1.0.0`
+`1.0.1`
 
 ## Compatibility
 

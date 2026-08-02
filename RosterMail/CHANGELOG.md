@@ -2,6 +2,11 @@
 
 All notable changes to RosterMail are documented in this file.
 
+## [1.0.1] - 2026-08-02
+
+### Fixed
+- Empty-roster subtitle now wraps inside the panel instead of being truncated
+
 ## [1.0.0] - 2026-08-01
 
 Initial stable release. First official CurseForge-ready build of RosterMail.

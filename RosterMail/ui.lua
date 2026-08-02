@@ -389,6 +389,8 @@ RefreshRosterList = function()
 				button.deleteButton:Show()
 				button.deleteButton:Raise()
 
+				button.nameText:SetWordWrap(false)
+				button.levelClassText:SetWordWrap(false)
 				button.nameText:SetText(GetClassColoredText(displayName, classFilename))
 				button.levelClassText:SetText(string.format("Level %s  %s", tostring(level), classDisplayName))
 				ApplyDynamicTextAnchors(button)
@@ -415,11 +417,21 @@ RefreshRosterList = function()
 
 		emptyButton.nameText:ClearAllPoints()
 		emptyButton.nameText:SetPoint("TOPLEFT", emptyButton, "TOPLEFT", 8, -6)
-		emptyButton.nameText:SetPoint("TOPRIGHT", emptyButton, "TOPRIGHT", -8, -6)
-		emptyButton.levelClassText:ClearAllPoints()
-		emptyButton.levelClassText:SetPoint("BOTTOMLEFT", emptyButton, "BOTTOMLEFT", 8, 6)
-		emptyButton.levelClassText:SetPoint("BOTTOMRIGHT", emptyButton, "BOTTOMRIGHT", -8, 6)
+		emptyButton.nameText:SetPoint("RIGHT", emptyButton, "RIGHT", -8, 0)
+		emptyButton.nameText:SetJustifyH("LEFT")
+		emptyButton.nameText:SetWordWrap(false)
 		emptyButton.nameText:SetText("|cffaaaaaaNo alts saved.|r")
+
+		-- Wrap subtitle inside the existing row width/height (no panel resize).
+		emptyButton.levelClassText:ClearAllPoints()
+		emptyButton.levelClassText:SetPoint("TOPLEFT", emptyButton.nameText, "BOTTOMLEFT", 0, -2)
+		emptyButton.levelClassText:SetPoint("RIGHT", emptyButton, "RIGHT", -8, 0)
+		emptyButton.levelClassText:SetJustifyH("LEFT")
+		emptyButton.levelClassText:SetJustifyV("TOP")
+		emptyButton.levelClassText:SetWordWrap(true)
+		if emptyButton.levelClassText.SetNonSpaceWrap then
+			emptyButton.levelClassText:SetNonSpaceWrap(true)
+		end
 		emptyButton.levelClassText:SetText("Log in on other characters to build the roster.")
 
 		emptyButton:ClearAllPoints()
