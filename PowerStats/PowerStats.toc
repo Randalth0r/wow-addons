@@ -1,0 +1,12 @@
+## Interface: 120100, 120007
+## Title: PowerStats
+## Notes: Simple text-only stat panel (max 6), single-row or one-per-row, colored names, static in combat.
+## Author: Randalthor
+## Version: 1.0.0
+## SavedVariables: PowerStatsDB
+## IconTexture: Interface\AddOns\PowerStats\icon.png
+## X-Website: https://www.curseforge.com/members/randalthor
+## X-CurseForge: https://www.curseforge.com/members/randalthor
+## Category: Combat
+
+PowerStats.lua
