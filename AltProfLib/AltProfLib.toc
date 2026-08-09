@@ -1,0 +1,27 @@
+## Interface: 120007
+## Title: AltProfLib
+## Notes: Account-wide profession and recipe roster library for WoW Midnight 12.0.7+
+## Author: Randalthor
+## Version: 1.0.0
+## X-Semantic-Version: 1.0.0
+## X-Release-Channel: stable
+## X-Compatible-With: 12.0.7+, 12.1.0
+## IconTexture: Interface\AddOns\AltProfLib\icon.png
+## SavedVariables: AltProfLibDB, AltProfSpecTracker, AltProfRecipeTrackerDB
+## OptionalDeps: ProfessionShoppingList
+## X-Website: https://github.com/Randalth0r/wow-addons
+## X-CurseForge: https://www.curseforge.com/members/randalthor
+## Category: Professions
+
+Core.lua
+Modules/DB.lua
+Modules/PublicAPI.lua
+Modules/Index.lua
+Modules/Professions.lua
+Modules/Recipes.lua
+Locales/en.lua
+Locales/it.lua
+Modules/CraftReply.lua
+Modules/Tooltip.lua
+Modules/Chat.lua
+Modules/Slash.lua
