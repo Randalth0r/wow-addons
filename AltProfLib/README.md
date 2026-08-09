@@ -160,3 +160,5 @@ Optional dependency: Profession Shopping List (load-order only).
 MIT License. See [LICENSE](LICENSE).
 
 Copyright (c) 2026 Randalthor
+
+<!-- release-sync: 1.0.1 -->

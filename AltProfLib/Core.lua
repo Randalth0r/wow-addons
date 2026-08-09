@@ -1,4 +1,5 @@
 local ADDON_NAME, ns = ...
+-- AltProfLib release 1.0.1
 
 AltProfLib = AltProfLib or {}
 ns.API = AltProfLib

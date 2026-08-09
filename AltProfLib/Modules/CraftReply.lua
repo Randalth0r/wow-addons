@@ -1,4 +1,5 @@
 local ADDON_NAME, ns = ...
+-- AltProfLib release 1.0.1
 local API = ns.API
 
 local CHANNEL_WHISPER = "WHISPER"

@@ -39,3 +39,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Internal beta self-test module
 
 ## [Unreleased]
+
+<!-- release-sync: 1.0.1 -->
