@@ -13,6 +13,9 @@ local VPAD, WIDTH_TRIM = 4, 5
 local HEADER_H, GEARW = 26, 18
 local LOCKW = 28              -- lock icon larger than the gear
 local MAX_SHOW = 6
+local BASE_FONT = 11
+local FONT_MIN, FONT_MAX = 8, 20
+local FONT_PATH = "Fonts\\FRIZQT__.TTF"
 
 --------------------------------------------------------------------
 -- Defaults / SavedVariables
@@ -22,10 +25,28 @@ local DEFAULTS = {
     scale  = 1.0,
     locked = false,
     layout = "column",   -- "column" (one per row) | "row" (single row)
+    background = true,
+    fontSize = BASE_FONT,
     stats  = { haste = true, crit = true, mastery = true, versd = true },
     colors = {},
 }
 local db
+
+local function Metrics()
+    local fs = tonumber(db and db.fontSize) or BASE_FONT
+    if fs < FONT_MIN then fs = FONT_MIN end
+    if fs > FONT_MAX then fs = FONT_MAX end
+    local k = fs / BASE_FONT
+    return {
+        fontSize = fs,
+        rowH = math.max(12, math.floor(ROW_H * k + 0.5)),
+        cellW = math.max(100, math.floor(CELLW * k + 0.5)),
+        headerH = math.max(20, math.floor(HEADER_H * k + 0.5)),
+        pad = math.max(6, math.floor(PAD * k + 0.5)),
+        vpad = math.max(3, math.floor(VPAD * k + 0.5)),
+        widthTrim = WIDTH_TRIM,
+    }
+end
 
 --------------------------------------------------------------------
 -- Secret-safe getters (12.0 Secret Values)
@@ -161,10 +182,11 @@ end
 --------------------------------------------------------------------
 -- Frames
 --------------------------------------------------------------------
-local RebuildPanel, ToggleConfig, RefreshConfig, OpenColorPicker
+local RebuildPanel, ToggleConfig, RefreshConfig, OpenColorPicker, ApplyBackground
 local main, statPool, activeList = nil, {}, {}
 local gearBtn, lockBtn, headerLabel
 local held = {}
+local btnBg, btnFontUp, btnFontDown, fontLabel
 
 local function UpdateLockIcon()
     if not lockBtn or not gearBtn then return end
@@ -183,8 +205,9 @@ local function UpdateLockIcon()
         gearBtn:ClearAllPoints()
         lockBtn:ClearAllPoints()
         if db.layout == "row" then
+            local gearS = gearBtn:GetWidth() or GEARW
             gearBtn:SetPoint("RIGHT", main, "RIGHT", -4, 0)
-            lockBtn:SetPoint("RIGHT", main, "RIGHT", -(4 + GEARW + 4), 0)
+            lockBtn:SetPoint("RIGHT", main, "RIGHT", -(4 + gearS + 4), 0)
         else
             gearBtn:SetPoint("TOPRIGHT", -4, -4)
             lockBtn:SetPoint("TOPRIGHT", -(4 + GEARW + 4), -1)
@@ -203,16 +226,25 @@ local function ActionBar1Width()
     return 500
 end
 
+local function ApplyBackground()
+    if not main then return end
+    if db.background ~= false then
+        main:SetBackdrop({
+            bgFile   = "Interface\\Tooltips\\UI-Tooltip-Background",
+            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+            tile = true, tileSize = 16, edgeSize = 12,
+            insets = { left = 3, right = 3, top = 3, bottom = 3 },
+        })
+        main:SetBackdropColor(0, 0, 0, 0.78)
+        main:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.9)
+    else
+        main:SetBackdrop(nil)
+    end
+end
+
 local function CreateUI()
     main = CreateFrame("Frame", "PowerStatsFrame", UIParent, "BackdropTemplate")
-    main:SetBackdrop({
-        bgFile   = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile = true, tileSize = 16, edgeSize = 12,
-        insets = { left = 3, right = 3, top = 3, bottom = 3 },
-    })
-    main:SetBackdropColor(0, 0, 0, 0.78)
-    main:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.9)
+    ApplyBackground()
     main:SetMovable(true); main:EnableMouse(true)
     main:RegisterForDrag("LeftButton")
     main:SetScript("OnDragStart", function(self) if not db.locked then self:StartMoving() end end)
@@ -259,8 +291,9 @@ local function LayoutRowSpacing()
     if db.layout ~= "row" then return end
     local n = #activeList
     if n == 0 then return end
-    local innerL = PAD
-    local innerR = main:GetWidth() - RIGHTW - PAD
+    local m = Metrics()
+    local innerL = m.pad
+    local innerR = main:GetWidth() - RIGHTW - m.pad
     local avail  = innerR - innerL
     local total  = 0
     for _, s in ipairs(activeList) do total = total + (s._fs:GetStringWidth() or 0) end
@@ -278,39 +311,55 @@ function RebuildPanel()
     BuildList()
     for _, fs in ipairs(statPool) do fs:Hide() end
     local n = #activeList
+    local m = Metrics()
+
+    if headerLabel then
+        headerLabel:SetFont(FONT_PATH, math.max(9, m.fontSize - 1), "")
+    end
 
     if db.layout == "row" then
         headerLabel:Hide()
         for i, s in ipairs(activeList) do
             local fs = statPool[i] or main:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
             statPool[i] = fs
-            fs:SetFontObject("GameFontNormalSmall")
-            fs:SetWidth(300)          -- generous; GetStringWidth still returns text width
+            fs:SetFont(FONT_PATH, m.fontSize, "")
+            fs:SetWidth(math.max(200, m.cellW * 2))
             fs:SetJustifyH("LEFT")
             fs:Show()
             s._fs = fs
         end
+        -- Scale width, height, and chrome with font so the single-row box stays proportional.
+        local k = m.fontSize / BASE_FONT
+        local gearS = math.max(14, math.floor(GEARW * k + 0.5))
+        local lockS = math.max(18, math.floor(LOCKW * k + 0.5))
+        gearBtn:SetSize(gearS, gearS)
+        lockBtn:SetSize(lockS, lockS)
         gearBtn:ClearAllPoints(); gearBtn:SetPoint("RIGHT", main, "RIGHT", -4, 0)
-        lockBtn:ClearAllPoints(); lockBtn:SetPoint("RIGHT", main, "RIGHT", -(4 + GEARW + 4), 0)
-        main:SetSize(ActionBar1Width(), math.max(ROW_H + 2*VPAD, LOCKW + 2))
+        lockBtn:ClearAllPoints(); lockBtn:SetPoint("RIGHT", main, "RIGHT", -(4 + gearS + 4), 0)
+        local rowW = ActionBar1Width() * k
+        local rowH = math.max(m.rowH + 2 * m.vpad, lockS + 2)
+        main:SetSize(rowW, rowH)
         LayoutRowSpacing()
     else
-        headerLabel:ClearAllPoints(); headerLabel:SetPoint("TOPLEFT", PAD, -6); headerLabel:Show()
+        gearBtn:SetSize(GEARW, GEARW)
+        lockBtn:SetSize(LOCKW, LOCKW)
+        headerLabel:ClearAllPoints(); headerLabel:SetPoint("TOPLEFT", m.pad, -6); headerLabel:Show()
         gearBtn:ClearAllPoints(); gearBtn:SetPoint("TOPRIGHT", -4, -4)
         lockBtn:ClearAllPoints(); lockBtn:SetPoint("TOPRIGHT", -(4 + GEARW + 4), -1)
         for i, s in ipairs(activeList) do
             local fs = statPool[i] or main:CreateFontString(nil, "OVERLAY", "GameFontNormal")
             statPool[i] = fs
-            fs:SetFontObject("GameFontNormal")
+            fs:SetFont(FONT_PATH, m.fontSize, "")
             fs:ClearAllPoints()
-            fs:SetPoint("TOPLEFT", PAD, -(VPAD + HEADER_H) - (i-1)*ROW_H)
-            fs:SetWidth(CELLW - 4)
+            fs:SetPoint("TOPLEFT", m.pad, -(m.vpad + m.headerH) - (i - 1) * m.rowH)
+            fs:SetWidth(m.cellW - 4)
             fs:SetJustifyH("LEFT")
             fs:Show()
             s._fs = fs
         end
-        main:SetSize(CELLW + 2*PAD - WIDTH_TRIM, VPAD + HEADER_H + math.max(1, n)*ROW_H + VPAD)
+        main:SetSize(m.cellW + 2 * m.pad - m.widthTrim, m.vpad + m.headerH + math.max(1, n) * m.rowH + m.vpad)
     end
+    ApplyBackground()
     UpdateLockIcon()
 end
 
@@ -376,11 +425,39 @@ function RefreshConfig()
         btnRow:SetAlpha(db.layout == "row" and 0.55 or 1)
         btnCol:SetAlpha(db.layout == "column" and 0.55 or 1)
     end
+    if btnBg then
+        btnBg:SetText(db.background ~= false and "BG: On" or "BG: Off")
+    end
+    if fontLabel then
+        fontLabel:SetText(tostring(db.fontSize or BASE_FONT))
+    end
+    if btnFontDown then
+        local fs = db.fontSize or BASE_FONT
+        if btnFontDown.SetEnabled then btnFontDown:SetEnabled(fs > FONT_MIN) else
+            if fs > FONT_MIN then btnFontDown:Enable() else btnFontDown:Disable() end
+        end
+    end
+    if btnFontUp then
+        local fs = db.fontSize or BASE_FONT
+        if btnFontUp.SetEnabled then btnFontUp:SetEnabled(fs < FONT_MAX) else
+            if fs < FONT_MAX then btnFontUp:Enable() else btnFontUp:Disable() end
+        end
+    end
+end
+
+local function SetFontSize(nextSize)
+    nextSize = math.floor(tonumber(nextSize) or BASE_FONT)
+    if nextSize < FONT_MIN then nextSize = FONT_MIN end
+    if nextSize > FONT_MAX then nextSize = FONT_MAX end
+    db.fontSize = nextSize
+    RebuildPanel()
+    UpdateValues()
+    RefreshConfig()
 end
 
 local function BuildConfig()
     config = CreateFrame("Frame", "PowerStatsConfig", UIParent, "BackdropTemplate")
-    config:SetSize(250, 440)
+    config:SetSize(250, 470)
     config:SetPoint("LEFT", main, "RIGHT", 8, 0)
     config:SetBackdrop({
         bgFile   = "Interface\\Tooltips\\UI-Tooltip-Background",
@@ -402,14 +479,56 @@ local function BuildConfig()
     close:SetPoint("TOPRIGHT", 2, 2)
 
     btnCol = CreateFrame("Button", nil, config, "UIPanelButtonTemplate")
-    btnCol:SetSize(105, 20); btnCol:SetPoint("TOPLEFT", 14, -28); btnCol:SetText("One per row")
+    btnCol:SetSize(105, 20); btnCol:SetPoint("TOPLEFT", 14, -28); btnCol:SetText("One per Row")
     btnCol:SetScript("OnClick", function() db.layout = "column"; RebuildPanel(); RefreshConfig() end)
     btnRow = CreateFrame("Button", nil, config, "UIPanelButtonTemplate")
-    btnRow:SetSize(105, 20); btnRow:SetPoint("TOPRIGHT", -14, -28); btnRow:SetText("Single row")
+    btnRow:SetSize(105, 20); btnRow:SetPoint("TOPRIGHT", -14, -28); btnRow:SetText("Single Row")
     btnRow:SetScript("OnClick", function() db.layout = "row"; RebuildPanel(); RefreshConfig() end)
 
+    btnBg = CreateFrame("Button", nil, config, "UIPanelButtonTemplate")
+    btnBg:SetSize(105, 20)
+    btnBg:SetPoint("TOPLEFT", 14, -52)
+    btnBg:SetScript("OnClick", function()
+        db.background = not (db.background ~= false)
+        ApplyBackground()
+        RefreshConfig()
+    end)
+
+    -- Same footprint as the Single Row button above.
+    local fontBar = CreateFrame("Frame", nil, config)
+    fontBar:SetSize(105, 20)
+    fontBar:SetPoint("TOPRIGHT", -14, -52)
+
+    local fontHint = fontBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    fontHint:SetPoint("LEFT", fontBar, "LEFT", 0, 0)
+    fontHint:SetText("|cffffd200Font|r")
+
+    -- Same height/chrome as BG: On (UIPanelButtonTemplate @ 20).
+    btnFontDown = CreateFrame("Button", nil, fontBar, "UIPanelButtonTemplate")
+    btnFontDown:SetSize(20, 20)
+    btnFontDown:SetPoint("LEFT", fontHint, "RIGHT", 4, 0)
+    btnFontDown:SetText("-")
+    if btnFontDown.GetFontString and btnFontDown:GetFontString() then
+        btnFontDown:GetFontString():SetFontObject(GameFontHighlightSmall)
+    end
+    btnFontDown:SetScript("OnClick", function() SetFontSize((db.fontSize or BASE_FONT) - 1) end)
+
+    fontLabel = fontBar:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    fontLabel:SetPoint("LEFT", btnFontDown, "RIGHT", 2, 0)
+    fontLabel:SetWidth(22)
+    fontLabel:SetJustifyH("CENTER")
+
+    btnFontUp = CreateFrame("Button", nil, fontBar, "UIPanelButtonTemplate")
+    btnFontUp:SetSize(20, 20)
+    btnFontUp:SetPoint("LEFT", fontLabel, "RIGHT", 2, 0)
+    btnFontUp:SetText("+")
+    if btnFontUp.GetFontString and btnFontUp:GetFontString() then
+        btnFontUp:GetFontString():SetFontObject(GameFontHighlightSmall)
+    end
+    btnFontUp:SetScript("OnClick", function() SetFontSize((db.fontSize or BASE_FONT) + 1) end)
+
     local scroll = CreateFrame("ScrollFrame", "PowerStatsScroll", config, "UIPanelScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT", 10, -56)
+    scroll:SetPoint("TOPLEFT", 10, -78)
     scroll:SetPoint("BOTTOMRIGHT", -30, 10)
     local content = CreateFrame("Frame", nil, scroll)
     content:SetWidth(200)
@@ -562,6 +681,10 @@ boot:SetScript("OnEvent", function(_, event, arg1)
         for k, v in pairs(DEFAULTS.stats) do db.stats[k] = v end
     end
     if db.layout ~= "row" and db.layout ~= "column" then db.layout = "column" end
+    if db.background == nil then db.background = true end
+    db.fontSize = tonumber(db.fontSize) or BASE_FONT
+    if db.fontSize < FONT_MIN then db.fontSize = FONT_MIN end
+    if db.fontSize > FONT_MAX then db.fontSize = FONT_MAX end
 
     CreateUI()
     ApplyBase()

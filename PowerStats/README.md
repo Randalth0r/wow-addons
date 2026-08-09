@@ -2,50 +2,47 @@
 
 **Your Stats. Alive.**
 
-*By [Randalthor](https://www.curseforge.com/members/randalthor)*
+By [Randalthor](https://www.curseforge.com/members/randalthor)
 
-PowerStats is a lightweight World of Warcraft **Retail** addon that shows a small, draggable text panel of live character statistics.
+Small Retail panel that keeps a few of your character stats on screen while you play. Text only, nothing fancy — just the numbers you care about.
 
-## Features
+## What it does
 
-- Up to **6** stats on screen at once
-- Two layouts: **one per row** or **single row**
-- Colored stat names (customizable)
-- Lock / unlock the panel (locked mode hides the options gear and keeps only the lock on the right)
-- Right-click the panel (or use `/ps config`) to choose stats
-- Combat-friendly: when Blizzard secret-value restrictions apply, the panel holds the last safe readings
+- Show up to **6** stats
+- Two layouts: **One per Row** or **Single Row**
+- Color the labels however you like
+- Lock the panel so it does not move (gear icon hides while locked)
+- Toggle the background on/off
+- Font size from 8 to 20 (fresh install starts at **11**)
+- In Single Row, the box grows with the font so everything stays proportional
+- In combat it holds the last safe values when Blizzard secrets the live ones
 
-## Requirements
+## Client
 
-| Client | Interface |
-|--------|-----------|
-| Retail 12.0.7 | `120007` |
-| Retail 12.1.0 | `120100` |
+Works on Retail **12.0.7** (`120007`) and **12.1.0** (`120100`).
 
 ## Install
 
-1. Copy the `PowerStats` folder into `World of Warcraft\_retail_\Interface\AddOns\`.
-2. Restart the client or `/reload`.
-3. Enable **PowerStats** in the AddOns list.
+Drop the `PowerStats` folder into `World of Warcraft\_retail_\Interface\AddOns\`, restart or `/reload`, and enable it in the AddOns list.
 
-## Slash commands
+## Commands
 
-| Command | Action |
-|---------|--------|
-| `/ps` or `/powerstats` | Show / hide the panel |
-| `/ps config` | Open the stat selection panel |
+| Command | What it does |
+|---------|--------------|
+| `/ps` or `/powerstats` | Show / hide |
+| `/ps config` | Open config |
 | `/ps row` / `/ps column` | Switch layout |
-| `/ps lock` | Lock / unlock movement |
-| `/ps scale N` | Set scale (`0.5`–`2.5`) |
-| `/ps <key>` | Toggle a stat (example: `/ps haste`) |
-| `/ps reset` | Restore defaults |
+| `/ps lock` | Lock / unlock |
+| `/ps scale N` | Scale (`0.5`–`2.5`) |
+| `/ps <key>` | Toggle a stat (e.g. `/ps haste`) |
+| `/ps reset` | Back to defaults |
 
-## Configuration
+## In game
 
-- **Gear icon** — open the config panel (hidden while locked)
-- **Lock icon** — lock or unlock the panel
-- **Right-click** the panel — toggle config
-- In config: pick up to 6 stats and click the color swatches to recolor labels
+- Gear icon opens config (hidden while locked)
+- Lock icon locks / unlocks
+- Right-click the panel for config
+- Config: pick stats, recolor swatches, BG, font size
 
 ## Saved variables
 
@@ -53,14 +50,9 @@ PowerStats is a lightweight World of Warcraft **Retail** addon that shows a smal
 
 ## Version
 
-Current release: **1.0.0** — see [CHANGELOG.md](CHANGELOG.md).
+**1.0.0** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Links
 
-- Author: [Randalthor](https://www.curseforge.com/members/randalthor)
-- GitHub (wow-addons monorepo): https://github.com/Randalth0r/wow-addons
 - CurseForge: https://www.curseforge.com/members/randalthor
-
-## License
-
-Not specified yet. Contact the author if you need redistribution terms.
+- GitHub: https://github.com/Randalth0r/wow-addons
