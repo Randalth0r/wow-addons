@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1 — 2026-08-09
+
+- Fix **Move** while skyriding / dynamic flight: use `C_PlayerInfo.GetGlidingInfo()` when gliding (same approach as Movement Speed). Ground mounts were fine; in the air `GetUnitSpeed` stayed at 0.
+
 ## 1.0.0 — 2026-08-09
 
 First public release.

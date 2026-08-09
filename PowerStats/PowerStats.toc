@@ -2,7 +2,7 @@
 ## Title: PowerStats
 ## Notes: Text panel for character stats. Up to 6 stats, One per Row or Single Row. BG and font controls. Holds values in combat.
 ## Author: Randalthor
-## Version: 1.0.0
+## Version: 1.0.1
 ## SavedVariables: PowerStatsDB
 ## IconTexture: Interface\AddOns\PowerStats\icon.png
 ## X-Website: https://www.curseforge.com/members/randalthor

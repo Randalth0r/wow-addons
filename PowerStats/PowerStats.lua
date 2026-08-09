@@ -1,5 +1,5 @@
 --=====================================================================
--- PowerStats 1.0.0  (text only)
+-- PowerStats 1.0.1  (text only)
 -- Up to 6 stats shown as text. Two layouts: single row or one-per-row.
 -- Colored stat names, effective percentage value.
 -- Static: values are held in combat (Blizzard makes combat stats secret
@@ -92,9 +92,24 @@ local function PctPreferred(fnName, cr)
     end
 end
 local function MoveSpeedPct()
-    local s = numOK(GetUnitSpeed and GetUnitSpeed("player"))
-    if not s then return nil end
-    return (s / 7) * 100
+    -- Match Movement Speed: while skyriding/gliding, GetUnitSpeed stays at 0 —
+    -- use C_PlayerInfo.GetGlidingInfo() instead. Otherwise current GetUnitSpeed.
+    local base = (BASE_MOVEMENT_SPEED and numOK(BASE_MOVEMENT_SPEED)) or 7
+    local yards
+    if C_PlayerInfo and C_PlayerInfo.GetGlidingInfo then
+        local ok, isGliding, _, forwardSpeed = pcall(C_PlayerInfo.GetGlidingInfo)
+        if ok and isGliding then
+            yards = numOK(forwardSpeed)
+        end
+    end
+    if yards == nil and GetUnitSpeed then
+        local unit = "player"
+        if UnitInVehicle and UnitInVehicle("player") then unit = "vehicle" end
+        local ok, current = pcall(GetUnitSpeed, unit)
+        if ok then yards = numOK(current) end
+    end
+    if yards == nil then return nil end
+    return (yards / base) * 100
 end
 local function ArmorVal() local _, eff = UnitArmor("player"); return numOK(eff) end
 local function APVal() local b,p,n = UnitAttackPower("player"); return sumOK(b,p,n) end
@@ -223,7 +238,9 @@ local function ActionBar1Width()
     end
     local mb = _G["MainMenuBar"]
     if mb and mb.GetWidth then local w = mb:GetWidth(); if w and w > 100 then return w end end
-    return 500
+    -- Last resort when action bar / main menu bar are unavailable (e.g. hidden).
+    -- Tuned to a typical retail action-bar span at default font (≈562).
+    return 562
 end
 
 local function ApplyBackground()

@@ -15,6 +15,7 @@ Small Retail panel that keeps a few of your character stats on screen while you 
 - Toggle the background on/off
 - Font size from 8 to 20 (fresh install starts at **11**)
 - In Single Row, the box grows with the font so everything stays proportional
+- **Move** works on ground mounts and while skyriding / dynamic flight
 - In combat it holds the last safe values when Blizzard secrets the live ones
 
 ## Client
@@ -50,7 +51,7 @@ Drop the `PowerStats` folder into `World of Warcraft\_retail_\Interface\AddOns\`
 
 ## Version
 
-**1.0.0** — see [CHANGELOG.md](CHANGELOG.md).
+**1.0.1** — see [CHANGELOG.md](CHANGELOG.md).
 
 ## Links
 
