@@ -5,6 +5,14 @@ All notable changes to AltProfLib are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] - 2026-08-09
+
+### Fixed
+
+- Craft Reply / item lookup now indexes all crafting-quality item IDs for a recipe
+  (Q1/Q2/Q3), so whispers linking a higher-quality reagent like Arcanoweave Spellthread
+  resolve to the same crafter as the base recipe output
+
 ## [1.0.0] - 2026-08-09
 
 ### Added

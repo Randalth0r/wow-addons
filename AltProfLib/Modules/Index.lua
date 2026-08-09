@@ -89,6 +89,25 @@ local function BucketHasRealProfession(bucket, charKey)
 end
 
 
+local function CollectPayloadCraftedItemIDs(payload)
+    local ids, seen = {}, {}
+    local function add(itemID)
+        itemID = tonumber(itemID)
+        if not itemID or itemID <= 0 or seen[itemID] then return end
+        seen[itemID] = true
+        table.insert(ids, itemID)
+    end
+
+    if type(payload) ~= "table" then return ids end
+    if type(payload.craftedItemIDs) == "table" then
+        for _, itemID in ipairs(payload.craftedItemIDs) do
+            add(itemID)
+        end
+    end
+    add(payload.craftedItemID)
+    return ids
+end
+
 function API:RebuildCraftedItemIndex(reason)
     local db = self:GetDB()
     if not db then return 0 end
@@ -97,30 +116,33 @@ function API:RebuildCraftedItemIndex(reason)
     local count = 0
 
     for recipeID, recipeEntry in pairs(db.recipeOwnerIndex or {}) do
-        local craftedItemID = nil
         for charKey, byProfession in pairs(db.learnedRecipes or {}) do
             if type(byProfession) == "table" then
                 for professionID, recipeBucket in pairs(byProfession) do
                     local payload = type(recipeBucket) == "table" and recipeBucket[tonumber(recipeID)] or nil
-                    if type(payload) == "table" and tonumber(payload.craftedItemID) then
-                        craftedItemID = tonumber(payload.craftedItemID)
-                        local numericRecipeID = tonumber(recipeID)
-                        local numericProfessionID = tonumber(professionID) or tonumber(payload.professionID) or 0
-                        db.craftedItemIndex[craftedItemID] = db.craftedItemIndex[craftedItemID] or {
-                            itemID = craftedItemID,
-                            recipes = {},
-                        }
-                        db.craftedItemIndex[craftedItemID].recipes[numericRecipeID] = db.craftedItemIndex[craftedItemID].recipes[numericRecipeID] or {
-                            recipeID = numericRecipeID,
-                            name = recipeEntry.name or payload.name,
-                            professionID = numericProfessionID,
-                            owners = recipeEntry.owners or {},
-                        }
-                        local itemRecipe = db.craftedItemIndex[craftedItemID].recipes[numericRecipeID]
-                        itemRecipe.name = itemRecipe.name or recipeEntry.name or payload.name
-                        itemRecipe.professionID = itemRecipe.professionID or numericProfessionID
-                        itemRecipe.owners = recipeEntry.owners or itemRecipe.owners or {}
-                        count = count + 1
+                    if type(payload) == "table" then
+                        local craftedItemIDs = CollectPayloadCraftedItemIDs(payload)
+                        if #craftedItemIDs > 0 then
+                            local numericRecipeID = tonumber(recipeID)
+                            local numericProfessionID = tonumber(professionID) or tonumber(payload.professionID) or 0
+                            for _, craftedItemID in ipairs(craftedItemIDs) do
+                                db.craftedItemIndex[craftedItemID] = db.craftedItemIndex[craftedItemID] or {
+                                    itemID = craftedItemID,
+                                    recipes = {},
+                                }
+                                db.craftedItemIndex[craftedItemID].recipes[numericRecipeID] = db.craftedItemIndex[craftedItemID].recipes[numericRecipeID] or {
+                                    recipeID = numericRecipeID,
+                                    name = recipeEntry.name or payload.name,
+                                    professionID = numericProfessionID,
+                                    owners = recipeEntry.owners or {},
+                                }
+                                local itemRecipe = db.craftedItemIndex[craftedItemID].recipes[numericRecipeID]
+                                itemRecipe.name = itemRecipe.name or recipeEntry.name or payload.name
+                                itemRecipe.professionID = itemRecipe.professionID or numericProfessionID
+                                itemRecipe.owners = recipeEntry.owners or itemRecipe.owners or {}
+                                count = count + 1
+                            end
+                        end
                     end
                 end
             end

@@ -46,55 +46,97 @@ local function ExtractItemIDFromLink(link)
     return tonumber(link:match("item:(%-?%d+)"))
 end
 
-local function ResolveCraftedItemID(recipeID, recipeInfo)
-    recipeID = tonumber(recipeID)
-    if not recipeID then return nil, nil end
+local function AppendUniqueItemID(list, seen, itemID)
+    itemID = tonumber(itemID)
+    if not itemID or itemID <= 0 or seen[itemID] then return end
+    seen[itemID] = true
+    table.insert(list, itemID)
+end
 
-    -- Midnight/modern profession APIs expose crafted output through different shapes
-    -- depending on recipe type, quality support, cache state, and build. Keep this
-    -- deliberately defensive: first direct item fields, then output item data, then
-    -- schematic data, then hyperlinks.
+-- Quality-crafted reagents/gear expose one item ID per quality tier.
+-- Chat links and tooltips often use Q2/Q3 IDs while recipeInfo.hyperlink is Q1.
+local function CollectCraftedItemIDs(recipeID, recipeInfo)
+    recipeID = tonumber(recipeID)
+    local ids, seen = {}, {}
+    if not recipeID then return ids, nil end
+
     if type(recipeInfo) == "table" then
-        local direct = tonumber(recipeInfo.itemID or recipeInfo.outputItemID or recipeInfo.outputItemId or recipeInfo.productID or recipeInfo.productItemID)
-        if direct and direct > 0 then return direct, "recipeInfo" end
-        local linkID = ExtractItemIDFromLink(recipeInfo.hyperlink or recipeInfo.link or recipeInfo.itemLink or recipeInfo.outputItemLink)
-        if linkID and linkID > 0 then return linkID, "recipeInfoLink" end
+        if type(recipeInfo.qualityItemIDs) == "table" then
+            for _, itemID in ipairs(recipeInfo.qualityItemIDs) do
+                AppendUniqueItemID(ids, seen, itemID)
+            end
+        end
+        AppendUniqueItemID(ids, seen, recipeInfo.itemID or recipeInfo.outputItemID or recipeInfo.outputItemId or recipeInfo.productID or recipeInfo.productItemID)
+        AppendUniqueItemID(ids, seen, ExtractItemIDFromLink(recipeInfo.hyperlink or recipeInfo.link or recipeInfo.itemLink or recipeInfo.outputItemLink))
     end
 
+    if C_TradeSkillUI and C_TradeSkillUI.GetRecipeQualityItemIDs then
+        local qualityItemIDs = API:SafeCall(C_TradeSkillUI.GetRecipeQualityItemIDs, recipeID)
+        if type(qualityItemIDs) == "table" then
+            for _, itemID in ipairs(qualityItemIDs) do
+                AppendUniqueItemID(ids, seen, itemID)
+            end
+        end
+    end
+
+    local maxQuality = (type(recipeInfo) == "table" and tonumber(recipeInfo.maxQuality)) or 5
+    if maxQuality < 1 then maxQuality = 1 end
+    if maxQuality > 5 then maxQuality = 5 end
+
     if C_TradeSkillUI and C_TradeSkillUI.GetRecipeOutputItemData then
+        for quality = 1, maxQuality do
+            local outputData = API:SafeCall(C_TradeSkillUI.GetRecipeOutputItemData, recipeID, nil, nil, quality)
+            if type(outputData) == "table" then
+                AppendUniqueItemID(ids, seen, outputData.itemID or outputData.outputItemID or outputData.productID or outputData.productItemID)
+                AppendUniqueItemID(ids, seen, ExtractItemIDFromLink(outputData.hyperlink or outputData.link or outputData.itemLink))
+            end
+        end
+
+        -- Also try the unreagents/default output once (some recipes ignore overrideQualityID).
         local outputData = API:SafeCall(C_TradeSkillUI.GetRecipeOutputItemData, recipeID)
         if type(outputData) == "table" then
-            local direct = tonumber(outputData.itemID or outputData.outputItemID or outputData.productID or outputData.productItemID)
-            if direct and direct > 0 then return direct, "outputData" end
-            local linkID = ExtractItemIDFromLink(outputData.hyperlink or outputData.link or outputData.itemLink)
-            if linkID and linkID > 0 then return linkID, "outputDataLink" end
+            AppendUniqueItemID(ids, seen, outputData.itemID or outputData.outputItemID or outputData.productID or outputData.productItemID)
+            AppendUniqueItemID(ids, seen, ExtractItemIDFromLink(outputData.hyperlink or outputData.link or outputData.itemLink))
         end
     end
 
     if C_TradeSkillUI and C_TradeSkillUI.GetRecipeSchematic then
         local schematic = API:SafeCall(C_TradeSkillUI.GetRecipeSchematic, recipeID, false)
         if type(schematic) == "table" then
-            local direct = tonumber(schematic.outputItemID or schematic.itemID or schematic.productID or schematic.productItemID)
-            if direct and direct > 0 then return direct, "schematic" end
-            local linkID = ExtractItemIDFromLink(schematic.outputItemHyperlink or schematic.outputItemLink or schematic.itemLink)
-            if linkID and linkID > 0 then return linkID, "schematicLink" end
+            AppendUniqueItemID(ids, seen, schematic.outputItemID or schematic.itemID or schematic.productID or schematic.productItemID)
+            AppendUniqueItemID(ids, seen, ExtractItemIDFromLink(schematic.outputItemHyperlink or schematic.outputItemLink or schematic.itemLink))
             if type(schematic.outputItemData) == "table" then
                 local data = schematic.outputItemData
-                local id = tonumber(data.itemID or data.outputItemID or data.productID or data.productItemID)
-                if id and id > 0 then return id, "schematicOutputData" end
-                local dataLinkID = ExtractItemIDFromLink(data.hyperlink or data.link or data.itemLink)
-                if dataLinkID and dataLinkID > 0 then return dataLinkID, "schematicOutputDataLink" end
+                AppendUniqueItemID(ids, seen, data.itemID or data.outputItemID or data.productID or data.productItemID)
+                AppendUniqueItemID(ids, seen, ExtractItemIDFromLink(data.hyperlink or data.link or data.itemLink))
             end
         end
     end
 
     if C_TradeSkillUI and C_TradeSkillUI.GetRecipeItemLink then
-        local itemLink = API:SafeCall(C_TradeSkillUI.GetRecipeItemLink, recipeID)
-        local linkID = ExtractItemIDFromLink(itemLink)
-        if linkID and linkID > 0 then return linkID, "recipeItemLink" end
+        AppendUniqueItemID(ids, seen, ExtractItemIDFromLink(API:SafeCall(C_TradeSkillUI.GetRecipeItemLink, recipeID)))
     end
 
-    return nil, nil
+    local source = nil
+    if #ids > 0 then
+        if type(recipeInfo) == "table" and type(recipeInfo.qualityItemIDs) == "table" and #recipeInfo.qualityItemIDs > 0 then
+            source = "qualityItemIDs"
+        elseif C_TradeSkillUI and C_TradeSkillUI.GetRecipeQualityItemIDs then
+            source = "GetRecipeQualityItemIDs"
+        else
+            source = "resolved"
+        end
+    end
+
+    return ids, source
+end
+
+local function ResolveCraftedItemID(recipeID, recipeInfo)
+    local ids, source = CollectCraftedItemIDs(recipeID, recipeInfo)
+    if #ids > 0 then
+        return ids[1], source, ids
+    end
+    return nil, nil, ids
 end
 
 local function ResolveProfessionName(recipeInfo, baseInfo)
@@ -130,7 +172,7 @@ function API:ScanOpenTradeSkillRecipes(reason)
             local professionName = ResolveProfessionName(recipeInfo, baseInfo)
             local primaryBucket, legacyBucket = self:EnsureRecipeBucket(charKey, professionID)
 
-            local craftedItemID, craftedItemSource = ResolveCraftedItemID(recipeID, recipeInfo)
+            local craftedItemID, craftedItemSource, craftedItemIDs = ResolveCraftedItemID(recipeID, recipeInfo)
 
             local payload = {
                 recipeID = tonumber(recipeID),
@@ -142,6 +184,7 @@ function API:ScanOpenTradeSkillRecipes(reason)
                 categoryID = recipeInfo.categoryID,
                 icon = recipeInfo.icon,
                 craftedItemID = craftedItemID,
+                craftedItemIDs = (craftedItemIDs and #craftedItemIDs > 0) and craftedItemIDs or nil,
                 craftedItemSource = craftedItemSource,
                 lastSeen = time(),
             }

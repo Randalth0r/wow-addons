@@ -3,7 +3,7 @@ local ADDON_NAME, ns = ...
 AltProfLib = AltProfLib or {}
 ns.API = AltProfLib
 ns.ADDON_NAME = ADDON_NAME
-ns.VERSION = "1.0.0"
+ns.VERSION = "1.0.1"
 ns.SCHEMA_VERSION = 4
 ns.IS_BETA = false
 
