@@ -1,5 +1,12 @@
 # One For All — Changelog
 
+## [v1.3.9](https://www.curseforge.com/wow/addons/one-for-all-midnight-updated) — August 13, 2026
+*By [Randalthor](https://www.curseforge.com/members/randalthor)*
+
+### WoW 12.1.0 Compatibility
+- Updated TOC interface number: added `120100` (12.1.0) so the addon is no
+  longer marked out of date. No Lua changes.
+
 ## [v1.3.8](https://www.curseforge.com/wow/addons/one-for-all-midnight-updated) — June 11, 2026
 *By [Randalthor](https://www.curseforge.com/members/randalthor)*
 
