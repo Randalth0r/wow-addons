@@ -1,5 +1,15 @@
 # IncBGS — Changelog
 
+## [v1.0.7](https://www.curseforge.com/wow/addons/incbgs) — June 11, 2026
+*By [Randalthor](https://www.curseforge.com/members/randalthor)*
+
+### Fix
+- Fixed `ADDON_ACTION_BLOCKED` on `SetAttribute()` in combat. `RefreshMacros()`
+  now skips if `InCombatLockdown()` is true. Macros are refreshed on
+  `PLAYER_REGEN_ENABLED` (combat end) to ensure zone name is always current.
+
+---
+
 ## [v1.0.6](https://www.curseforge.com/wow/addons/incbgs) — June 11, 2026
 *By [Randalthor](https://www.curseforge.com/members/randalthor)*
 

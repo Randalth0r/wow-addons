@@ -1,4 +1,4 @@
--- IncBGS v1.0.6
+-- IncBGS v1.0.7
 -- Quick Incoming report bar for Battlegrounds.
 -- Original concept inspired by REPorter by AcidWeb.
 -- Written for WoW 12.x (12.0.5) by Randalthor.
@@ -6,7 +6,7 @@
 local ADDON_NAME, INC = ...
 _G.IncBGS = INC
 
-local VERSION = "1.0.6"
+local VERSION = "1.0.7"
 
 -- ── Upvalues ───────────────────────────────────────────────────────────────
 local pairs          = _G.pairs
@@ -81,6 +81,7 @@ local function BuildMacroBody(defIndex, loc, raidWarn)
 end
 
 local function RefreshMacros()
+    if InCombatLockdown() then return end  -- SetAttribute blocked in combat
     local loc      = GetLocationName()
     local raidWarn = IncBGSSettings and IncBGSSettings.raidWarn
     for i = 1, #BUTTON_DEFS do
@@ -91,7 +92,6 @@ local function RefreshMacros()
 end
 
 -- ── Safe toggle (checks combat lockdown) ───────────────────────────────────
--- Defined early so it can be referenced by minimap and slash commands
 local function SafeToggleBar()
     if InCombatLockdown() then
         print("|cFF74D06C[IncBGS]|r Cannot show/hide bar during combat.")
@@ -105,11 +105,9 @@ local function SafeToggleBar()
 end
 
 -- ── Lock button update ─────────────────────────────────────────────────────
-local ICON_LOCKED   = "Interface\\Icons\\achievement_quests_completed_06"
-local ICON_UNLOCKED = "Interface\\Icons\\achievement_quests_completed_07"
+local ICON_LOCKED = "Interface\\Icons\\achievement_quests_completed_06"
 
 local function UpdateLockButton()
-    -- Lock button is now just a drag handle — icon stays locked always
     if not btnLock then return end
     btnLock.icon:SetTexture(ICON_LOCKED)
     btnLock.icon:SetDesaturated(false)
@@ -188,9 +186,7 @@ local function CreateBar()
     Bar:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
     Bar:Hide()
 
-    Bar:SetScript("OnDragStart", function(self)
-        -- drag handled by lock button hold
-    end)
+    Bar:SetScript("OnDragStart", function(self) end)
     Bar:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
         local x, y = self:GetCenter()
@@ -216,7 +212,6 @@ local function CreateBar()
         buttons[i] = btn
     end
 
-    -- Lock button (hold to drag)
     btnLock = CreateFrame("Button", "IncBGSBarLock", Bar, "UIPanelButtonTemplate")
     btnLock:SetSize(MICRO_SIZE, MICRO_SIZE)
     local lockIcon = btnLock:CreateTexture(nil, "ARTWORK")
@@ -241,7 +236,6 @@ local function CreateBar()
     end)
     btnLock:SetScript("OnLeave", function() _G.GameTooltip:Hide() end)
 
-    -- Layout button
     btnLayout = CreateFrame("Button", "IncBGSBarLayout", Bar, "UIPanelButtonTemplate")
     btnLayout:SetSize(MICRO_SIZE, MICRO_SIZE)
     btnLayout:SetText("H")
@@ -273,9 +267,7 @@ local function SetupMinimapButton()
         icon    = "Interface\\Icons\\ability_warrior_battleshout",
         label   = "IncBGS",
         OnClick = function(self, btn)
-            if btn == "LeftButton" then
-                SafeToggleBar()
-            end
+            if btn == "LeftButton" then SafeToggleBar() end
         end,
         OnEnter = function(self)
             _G.GameTooltip:SetOwner(self, "ANCHOR_LEFT")
@@ -372,6 +364,7 @@ eventFrame:RegisterEvent("ADDON_LOADED")
 eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 eventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 eventFrame:RegisterEvent("ZONE_CHANGED")
+eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 
 eventFrame:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
@@ -382,13 +375,17 @@ eventFrame:SetScript("OnEvent", function(_, event, arg1)
         SetupMinimapButton()
         print("|cFF74D06C[IncBGS]|r v" .. VERSION .. " loaded. Type |cFFFFD700/incbgs help|r for commands.")
 
+    elseif event == "PLAYER_REGEN_ENABLED" then
+        -- Combat ended: refresh macros now that SetAttribute is allowed
+        local _, instanceType = IsInInstance()
+        if instanceType == "pvp" then RefreshMacros() end
+
     elseif event == "PLAYER_ENTERING_WORLD"
         or event == "ZONE_CHANGED_NEW_AREA"
         or event == "ZONE_CHANGED" then
         local _, instanceType = IsInInstance()
         local inBG = (instanceType == "pvp")
         if inBG then RefreshMacros() end
-        -- Defer visibility change until out of combat
         local function applyVisibility()
             if InCombatLockdown() then
                 C_Timer.After(1, applyVisibility)

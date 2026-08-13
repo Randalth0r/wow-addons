@@ -3,7 +3,7 @@
 Quick Incoming report bar for Battlegrounds — WoW 12.x compatible.
 
 **Author:** Randalthor  
-**Version:** 1.0.6  
+**Version:** 1.0.7  
 **CurseForge:** https://www.curseforge.com/wow/addons/incbgs
 
 ## Commands
