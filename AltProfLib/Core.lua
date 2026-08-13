@@ -1,10 +1,10 @@
 local ADDON_NAME, ns = ...
--- AltProfLib release 1.0.1
+-- AltProfLib release 1.0.2
 
 AltProfLib = AltProfLib or {}
 ns.API = AltProfLib
 ns.ADDON_NAME = ADDON_NAME
-ns.VERSION = "1.0.1"
+ns.VERSION = "1.0.2"
 ns.SCHEMA_VERSION = 4
 ns.IS_BETA = false
 

@@ -1,5 +1,5 @@
 AltProfLibLocale = AltProfLibLocale or {}
--- AltProfLib release 1.0.1
+-- AltProfLib release 1.0.2
 AltProfLibLocale["en"] = {
     CRAFT_REPLY_TEMPLATE = "Hi! I can craft {item} on {character} ({profession} Sk:{skill}). Whisper me or send me the mats for a fast craft!",
     BTN_WHISPER = "Whisper",

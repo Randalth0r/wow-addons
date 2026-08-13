@@ -1,6 +1,6 @@
 # AltProfLib
 
-**Version 1.0.1** — Account-wide profession and recipe roster library for World of Warcraft Midnight **12.0.7+** (forward-compatible with **12.1.0**).
+**Version 1.0.2** — Account-wide profession and recipe roster library for World of Warcraft Midnight **12.0.7+** (forward-compatible with **12.1.0**).
 
 AltProfLib scans professions and learned recipes on each character you log into, builds a local crafter database, and shows who can craft an item directly in tooltips. It also includes a Craft Reply panel to prepare chat responses for crafting requests.
 
@@ -161,4 +161,4 @@ MIT License. See [LICENSE](LICENSE).
 
 Copyright (c) 2026 Randalthor
 
-<!-- release-sync: 1.0.1 -->
+<!-- release-sync: 1.0.2 -->

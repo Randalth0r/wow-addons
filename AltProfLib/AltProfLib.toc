@@ -2,9 +2,9 @@
 ## Title: AltProfLib
 ## Notes: Account-wide profession and recipe roster library for WoW Midnight 12.0.7+
 ## Author: Randalthor
-## Version: 1.0.1
-## X-Semantic-Version: 1.0.1
-## X-Release-Sync: 1.0.1
+## Version: 1.0.2
+## X-Semantic-Version: 1.0.2
+## X-Release-Sync: 1.0.2
 ## X-Release-Channel: stable
 ## X-Compatible-With: 12.0.7+, 12.1.0
 ## IconTexture: Interface\AddOns\AltProfLib\icon.png

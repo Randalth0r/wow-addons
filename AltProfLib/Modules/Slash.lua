@@ -1,5 +1,5 @@
 local ADDON_NAME, ns = ...
--- AltProfLib release 1.0.1
+-- AltProfLib release 1.0.2
 local API = ns.API
 
 local function PrintHelp()

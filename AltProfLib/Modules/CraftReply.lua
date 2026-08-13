@@ -1,5 +1,5 @@
 local ADDON_NAME, ns = ...
--- AltProfLib release 1.0.1
+-- AltProfLib release 1.0.2
 local API = ns.API
 
 local CHANNEL_WHISPER = "WHISPER"
@@ -295,10 +295,45 @@ local function RemoveRecentTargetAt(index)
     table.remove(list, index)
 end
 
--- Same path Blizzard uses on Shift+Click player name: SendWho + WHO_LIST_UPDATE.
+-- Background Who lookup for class/level. Must never open Friends/Who UI.
 local whoQueue = {}
 local whoInFlight = nil
+local whoUiSilenced = false
 local whoFrame = CreateFrame("Frame")
+
+local function SilenceBlizzardWhoUI()
+    if whoUiSilenced then return end
+    if C_FriendList and C_FriendList.SetWhoToUi then
+        pcall(C_FriendList.SetWhoToUi, true)
+    end
+    if FriendsFrame and FriendsFrame.UnregisterEvent then
+        FriendsFrame:UnregisterEvent("WHO_LIST_UPDATE")
+    end
+    if WhoFrame and WhoFrame.UnregisterEvent then
+        WhoFrame:UnregisterEvent("WHO_LIST_UPDATE")
+    end
+    if SocialBrowserFrame and SocialBrowserFrame.UnregisterEvent then
+        SocialBrowserFrame:UnregisterEvent("WHO_LIST_UPDATE")
+    end
+    whoUiSilenced = true
+end
+
+local function RestoreBlizzardWhoUI()
+    if not whoUiSilenced then return end
+    if FriendsFrame and FriendsFrame.RegisterEvent then
+        FriendsFrame:RegisterEvent("WHO_LIST_UPDATE")
+    end
+    if WhoFrame and WhoFrame.RegisterEvent then
+        WhoFrame:RegisterEvent("WHO_LIST_UPDATE")
+    end
+    if SocialBrowserFrame and SocialBrowserFrame.RegisterEvent then
+        SocialBrowserFrame:RegisterEvent("WHO_LIST_UPDATE")
+    end
+    if C_FriendList and C_FriendList.SetWhoToUi then
+        pcall(C_FriendList.SetWhoToUi, false)
+    end
+    whoUiSilenced = false
+end
 
 local function ClassFileFromWhoInfo(info)
     if type(info) ~= "table" then return nil end
@@ -343,49 +378,70 @@ end
 
 local function StripWowEscapeCodes(text)
     if type(text) ~= "string" then return "" end
-    text = text:gsub("|c%x%x%x%x%x%x%x%x", "")
-    text = text:gsub("|r", "")
-    text = text:gsub("|T.-|t", "")
-    text = text:gsub("|A.-|a", "")
-    -- Keep visible [Name] from |Hplayer:...|h[Name]|h
-    text = text:gsub("|H.-|[Hh]", "")
-    text = text:gsub("|h", "")
-    return text
+    local ok, cleaned = pcall(function()
+        text = text:gsub("|c%x%x%x%x%x%x%x%x", "")
+        text = text:gsub("|r", "")
+        text = text:gsub("|T.-|t", "")
+        text = text:gsub("|A.-|a", "")
+        -- Keep visible [Name] from |Hplayer:...|h[Name]|h
+        text = text:gsub("|H.-|[Hh]", "")
+        text = text:gsub("|h", "")
+        return text
+    end)
+    return (ok and cleaned) or ""
+end
+
+-- Midnight can mark some system/chat payloads as secret strings while tainted.
+-- Never compare or pattern-match those values.
+local function IsReadableChatString(value)
+    if type(value) ~= "string" then return false end
+    if issecretvalue and issecretvalue(value) then return false end
+    if canaccessvalue and not canaccessvalue(value) then return false end
+    local ok, empty = pcall(function()
+        return value == ""
+    end)
+    if not ok then return false end
+    return not empty
 end
 
 -- Parse Blizzard who system lines such as:
 -- [Beltharion]: Level 90 Kul Tiran Hunter <Guild-Realm> - Zone
 local function ParseWhoSystemMessage(msg)
-    if type(msg) ~= "string" or msg == "" then return nil end
+    if not IsReadableChatString(msg) then return nil end
 
-    local whoName = msg:match("|h%[([^%]]+)%]|h") or msg:match("%[([^%]]+)%]")
-    local plain = StripWowEscapeCodes(msg)
+    local ok, result = pcall(function()
+        local whoName = msg:match("|h%[([^%]]+)%]|h") or msg:match("%[([^%]]+)%]")
+        local plain = StripWowEscapeCodes(msg)
 
-    if not whoName then
-        whoName = plain:match("%[([^%]]+)%]")
-    end
-    if not whoName then return nil end
+        if not whoName then
+            whoName = plain:match("%[([^%]]+)%]")
+        end
+        if not whoName then return nil end
 
-    local level, tail = plain:match("[Ll]evel%s+(%d+)%s+(.+)$")
-    if not level then
-        level, tail = plain:match("[Ll]ivello%s+(%d+)%s+(.+)$")
-    end
-    if not level then
-        -- Fallback: first number after the name marker.
-        level, tail = plain:match("%].-(%d%d?)%s+(.+)$")
-    end
-    if not level or not tail then return nil end
+        local level, tail = plain:match("[Ll]evel%s+(%d+)%s+(.+)$")
+        if not level then
+            level, tail = plain:match("[Ll]ivello%s+(%d+)%s+(.+)$")
+        end
+        if not level then
+            -- Fallback: first number after the name marker.
+            level, tail = plain:match("%].-(%d%d?)%s+(.+)$")
+        end
+        if not level or not tail then return nil end
 
-    local beforeGuild = tail:match("^(.-)%s*<") or tail:match("^(.-)%s*%-%s*") or tail
-    beforeGuild = strtrim(beforeGuild or "")
-    local classToken = beforeGuild:match("(%S+)$")
+        local beforeGuild = tail:match("^(.-)%s*<") or tail:match("^(.-)%s*%-%s*") or tail
+        beforeGuild = strtrim(beforeGuild or "")
+        local classToken = beforeGuild:match("(%S+)$")
 
-    return {
-        fullName = ShortPlayerName(whoName) or whoName,
-        level = tonumber(level),
-        className = classToken,
-        classStr = classToken,
-    }
+        return {
+            fullName = ShortPlayerName(whoName) or whoName,
+            level = tonumber(level),
+            className = classToken,
+            classStr = classToken,
+        }
+    end)
+
+    if not ok then return nil end
+    return result
 end
 
 local function NormalizeWhoInfo(info)
@@ -452,20 +508,48 @@ end
 local function ProcessWhoQueue()
     if whoInFlight then return end
     local nextReq = table.remove(whoQueue, 1)
-    if not nextReq then return end
+    if not nextReq then
+        RestoreBlizzardWhoUI()
+        return
+    end
 
     whoInFlight = nextReq
+    SilenceBlizzardWhoUI()
+
     local query = nextReq.query
-    -- Keep Who results readable from GetWhoInfo (same as Shift+Click player name).
-    if C_FriendList and C_FriendList.SetWhoToUi then
-        pcall(C_FriendList.SetWhoToUi, true)
-    end
+    local sent = false
     if C_FriendList and C_FriendList.SendWho then
-        C_FriendList.SendWho(query)
+        local origin = Enum and Enum.SocialWhoOrigin and Enum.SocialWhoOrigin.Addon
+        if origin ~= nil then
+            sent = pcall(C_FriendList.SendWho, query, origin)
+        end
+        if not sent then
+            sent = pcall(C_FriendList.SendWho, query)
+        end
     elseif SendWho then
-        SendWho(query)
-    else
+        sent = pcall(SendWho, query)
+    end
+
+    if not sent then
         whoInFlight = nil
+        RestoreBlizzardWhoUI()
+        if #whoQueue > 0 then
+            ProcessWhoQueue()
+        end
+        return
+    end
+
+    if C_Timer and C_Timer.After then
+        local token = nextReq
+        C_Timer.After(5, function()
+            if whoInFlight == token then
+                whoInFlight = nil
+                RestoreBlizzardWhoUI()
+                if #whoQueue > 0 then
+                    ProcessWhoQueue()
+                end
+            end
+        end)
     end
 end
 
@@ -513,6 +597,37 @@ RequestWhoIfNeeded = function(entry)
     EnqueueWhoLookup(entry.name, entry.realm)
 end
 
+local function IsBlizzardWhoPanel(frame)
+    if not frame then return false end
+    if frame == FriendsFrame or frame == WhoFrame then return true end
+    local name = frame.GetName and frame:GetName() or nil
+    if not name then return false end
+    return name == "FriendsFrame" or name == "WhoFrame" or name == "SocialBrowserFrame"
+end
+
+if type(hooksecurefunc) == "function" then
+    if type(ShowUIPanel) == "function" then
+        hooksecurefunc("ShowUIPanel", function(frame)
+            if not whoInFlight or not IsBlizzardWhoPanel(frame) then return end
+            if HideUIPanel then
+                pcall(HideUIPanel, frame)
+            elseif frame.Hide then
+                pcall(frame.Hide, frame)
+            end
+        end)
+    end
+    if FriendsFrame and FriendsFrame.Show then
+        hooksecurefunc(FriendsFrame, "Show", function(frame)
+            if not whoInFlight then return end
+            if HideUIPanel then
+                pcall(HideUIPanel, frame)
+            elseif frame.Hide then
+                pcall(frame.Hide, frame)
+            end
+        end)
+    end
+end
+
 whoFrame:RegisterEvent("WHO_LIST_UPDATE")
 whoFrame:RegisterEvent("CHAT_MSG_SYSTEM")
 whoFrame:SetScript("OnEvent", function(_, event, ...)
@@ -521,7 +636,7 @@ whoFrame:SetScript("OnEvent", function(_, event, ...)
         whoInFlight = nil
 
         local changed = false
-        if C_FriendList and C_FriendList.GetNumWhoResults and C_FriendList.GetWhoInfo then
+        if pending and C_FriendList and C_FriendList.GetNumWhoResults and C_FriendList.GetWhoInfo then
             local num = C_FriendList.GetNumWhoResults() or 0
             for i = 1, num do
                 local info = C_FriendList.GetWhoInfo(i)
@@ -535,6 +650,8 @@ whoFrame:SetScript("OnEvent", function(_, event, ...)
             RefreshRecentTargetsList()
         end
 
+        RestoreBlizzardWhoUI()
+
         if #whoQueue > 0 and C_Timer and C_Timer.After then
             C_Timer.After(0.75, ProcessWhoQueue)
         elseif #whoQueue > 0 then
@@ -545,9 +662,23 @@ whoFrame:SetScript("OnEvent", function(_, event, ...)
 
     if event == "CHAT_MSG_SYSTEM" then
         local msg = ...
+        if not IsReadableChatString(msg) then return end
         local info = ParseWhoSystemMessage(msg)
-        if info and ApplyWhoInfoToRecentTargets(info) and RefreshRecentTargetsList then
+        if not info then return end
+
+        local changed = ApplyWhoInfoToRecentTargets(info)
+        if changed and RefreshRecentTargetsList then
             RefreshRecentTargetsList()
+        end
+
+        if whoInFlight and NamesMatch(whoInFlight.name, info.fullName) then
+            whoInFlight = nil
+            RestoreBlizzardWhoUI()
+            if #whoQueue > 0 and C_Timer and C_Timer.After then
+                C_Timer.After(0.75, ProcessWhoQueue)
+            elseif #whoQueue > 0 then
+                ProcessWhoQueue()
+            end
         end
     end
 end)
